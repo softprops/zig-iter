@@ -200,14 +200,14 @@ test from {
     try std.testing.expectEqual(null, iter.next());
 }
 
-pub fn Filter(comptime T: type, comptime F: type) type {
+pub fn Filter(comptime T: type) type {
     // todo check f is a single arg fn that returns a bool
     return struct {
         wrapped: T,
-        pred: F,
+        pred: fn (T.Elem) bool,
         usingnamespace Methods(@This());
         const Elem = T.Elem;
-        pub fn init(wrapped: T, pred: F) @This() {
+        pub fn init(wrapped: T, pred: fn (T.Elem) bool) @This() {
             return .{ .wrapped = wrapped, .pred = pred };
         }
 
@@ -290,12 +290,14 @@ fn Methods(comptime T: type) type {
             return Take(T).init(self, n);
         }
 
+        /// transform all elements of T into a new item
         pub fn map(self: T, func: anytype) Map(T, @TypeOf(func)) {
             return Map(T, @TypeOf(func)).init(self, func);
         }
 
-        pub fn filter(self: T, func: anytype) Filter(T, @TypeOf(func)) {
-            return Filter(T, @TypeOf(func)).init(self, func);
+        /// filter out any elements which don't match a predicate func
+        pub fn filter(self: T, func: fn (T.Elem) bool) Filter(T) {
+            return Filter(T).init(self, func);
         }
     };
 }
