@@ -30,7 +30,7 @@ fn Repeat(comptime T: type) type {
 }
 
 /// returns an interator yield a provided value indefinitely
-fn repeat(value: anytype) Repeat(@TypeOf(value)) {
+pub fn repeat(value: anytype) Repeat(@TypeOf(value)) {
     return Repeat(@TypeOf(value)).init(value);
 }
 
@@ -60,7 +60,7 @@ fn Once(comptime T: type) type {
 }
 
 /// create a iterator that runs once and returns a provided value
-fn once(value: anytype) Once(@TypeOf(value)) {
+pub fn once(value: anytype) Once(@TypeOf(value)) {
     return Once(@TypeOf(value)).init(value);
 }
 
@@ -82,7 +82,7 @@ pub fn Skip(comptime T: type) type {
         pub fn init(wrapped: T, n: usize) @This() {
             return .{ .wrapped = wrapped, .n = n };
         }
-        
+
         pub fn next(self: *@This()) ?Elem {
             while (self.n > 0) : (self.n -= 1) {
                 _ = self.wrapped.next();
