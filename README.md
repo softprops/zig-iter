@@ -10,6 +10,45 @@
 
 [![Main](https://github.com/softprops/zig-iter/actions/workflows/ci.yml/badge.svg)](https://github.com/softprops/zig-iter/actions/workflows/ci.yml) ![License Info](https://img.shields.io/github/license/softprops/zig-iter) ![Release](https://img.shields.io/github/v/release/softprops/zig-iter) [![Zig Support](https://img.shields.io/badge/zig-0.13.0-black?logo=zig)](https://ziglang.org/documentation/0.13.0/)
 
+If you are coming to zig from any variety of other languages you might be asking the questions like: how can I transform this collection?, how can I filter out elements?, among other things you might be used to from where you are coming from. The answer in zig is "it depends", but you'll likely be using a for loop and allocating a copy of the collection you have on hand.
+
+Let's use a very simple example, doubling the value of an array of elems that you may do something later with. I'll just print it out for simplicity but you'll likely be doing something more useful.
+
+```zig
+var elems = [_]i32 { 1, 2, 3 };
+var buf = try std.ArrayList(i32).initCapacity(allocator, elems.len);
+def buf.deinit();
+for (elem) |elem| {
+    buf.appendAssumeCapacity(elem * 2);
+}
+var doubled = doubled.toOwnedSlice();
+defer allocator.free(doubled);
+for (doubled) |elem| {
+    std.debug.print("{d}", .{elem});
+}
+```
+
+The simple example above quickly becomes much more complicated as additional transformations and filtering is required.
+
+If you are coming from another language you are used to something like `elems.map(...)`
+
+With this library you can, _almost_ have that too. Below is an equivalent program but 
+sans required additial allocations and zig's required memory deallocation. 
+
+```zig
+var elems = [_]i32 { 1, 2, 3 };
+var doubled = iter.from(elems).next().map(struct { fn func(n: i32) i32 { n * 2 } }.func);
+while (doubled.next()) |elem| {
+    std.debug.print("{d}", .{elem});
+}
+```
+
+I say _almost_ because 
+
+* zig does not support closures, but it does support functions as arguments so we can emulate these to a certain degree
+* some [changes to `usingnamespace`](https://github.com/softprops/zig-iter/issues/1) facilitate the need for an itermediatory method, we use `next()` to access and chain iterator methods. If zig brings that back in a different form. `next()` will no longer been nessessary.
+
+
 
 ## examples
 
@@ -58,7 +97,7 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
 
     const optimize = b.standardOptimizeOption(.{});
-    // 👇 de-reference dep from build.zig.zon
+    // 👇 de-reference dep from build.zig.zon`
 +    const iter = b.dependency("iter", .{
 +        .target = target,
 +        .optimize = optimize,
