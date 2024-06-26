@@ -10,6 +10,8 @@
 
 [![Main](https://github.com/softprops/zig-iter/actions/workflows/ci.yml/badge.svg)](https://github.com/softprops/zig-iter/actions/workflows/ci.yml) ![License Info](https://img.shields.io/github/license/softprops/zig-iter) ![Release](https://img.shields.io/github/v/release/softprops/zig-iter) [![Zig Support](https://img.shields.io/badge/zig-0.13.0-black?logo=zig)](https://ziglang.org/documentation/0.13.0/)
 
+## what's next()?
+
 If you are coming to zig from any variety of other languages you might be asking the questions like: how can I transform this collection?, how can I filter out elements?, among other things you might be used to from where you are coming from. The answer in zig is "it depends", but you'll likely be using a for loop and allocating a copy of the collection you have on hand.
 
 Let's use a very simple example, doubling the value of an array of elems that you may do something later with. I'll just print it out for simplicity but you'll likely be doing something more useful.
