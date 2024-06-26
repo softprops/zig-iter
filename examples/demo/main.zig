@@ -74,6 +74,16 @@ pub fn main() !void {
         }
     }
 
+    // fold
+    {
+        const sum = iter.from([_]i32{ 1, 2, 3 }).then().fold(i32, 0, struct {
+            fn func(elem: i32, state: i32) i32 {
+                return state + elem;
+            }
+        }.func);
+        std.debug.print("fold {any}\n", .{sum});
+    }
+
     // combo
     {
         const timesTwo = struct {

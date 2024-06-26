@@ -369,6 +369,37 @@ test Map {
     try std.testing.expectEqual(null, iter.next());
 }
 
+fn Fold(comptime T: type, comptime R: type) type {
+    return struct {
+        wrapped: T,
+        state: R,
+        func: *const fn (T.Elem, R) R,
+
+        const Elem = R;
+
+        pub fn init(wrapped: T, initial: R, func: *const fn (T.Elem, R) R) @This() {
+            return .{ .wrapped = wrapped, .state = initial, .func = func };
+        }
+
+        pub fn get(self: *@This()) R {
+            while (self.wrapped.next()) |elem| {
+                self.state = self.func(elem, self.state);
+            }
+            return self.state;
+        }
+    };
+}
+
+test Fold {
+    const sum = from([_]i32{ 1, 2, 3 }).then().fold(i32, 0, struct {
+        fn func(elem: i32, state: i32) i32 {
+            return state + elem;
+        }
+    }.func);
+    try std.testing.expectEqual(6, sum);
+}
+
+/// provides transformation funcs
 fn Iter(comptime T: type) type {
     // check assumptions
     return struct {
@@ -397,6 +428,11 @@ fn Iter(comptime T: type) type {
         /// zip two iterators together
         pub fn zip(self: @This(), other: anytype) Zip(T, @TypeOf(other)) {
             return Zip(T, @TypeOf(other)).init(self.value, other);
+        }
+
+        pub fn fold(self: @This(), comptime R: type, init: R, func: *const fn (T.Elem, R) R) R {
+            var folder = Fold(T, R).init(self.value, init, func);
+            return folder.get();
         }
     };
 }

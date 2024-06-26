@@ -71,6 +71,8 @@ The following methods are available when calling `then()` on iterator types
 * `filter(func)` - filters an iterator by testing a `func` predicate
 * `take(n)` - take only the first `n` elems of an iterator
 * `skip(n)` - skip the first `n` elems of an iterator
+* `zip(iter)` - create an iterator yielding a tuple of iterator values
+* `fold(returnType, init, func)` - reduces an iterator down to a single value
 
 likely more to come
 
