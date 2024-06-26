@@ -383,7 +383,7 @@ fn Function(comptime T: type) type {
         pub fn next(self: *@This()) ?Elem {
             if (self.state) |state| {
                 self.state = self.func(state);
-                return self.state;
+                return state;
             }
             return null;
         }
@@ -415,6 +415,7 @@ test fromFn {
             };
         }
     }.func);
+    try std.testing.expectEqual(0, it.next());
     try std.testing.expectEqual(1, it.next());
     try std.testing.expectEqual(2, it.next());
     try std.testing.expectEqual(3, it.next());
