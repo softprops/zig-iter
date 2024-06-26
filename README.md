@@ -59,6 +59,19 @@ I say _almost_ because
 * some [changes to `usingnamespace`](https://github.com/softprops/zig-iter/issues/1) facilitate the need for an itermediatory method, we use `next()` to access and chain iterator methods. If zig brings that back in a different form. `next()` will no longer been nessessary.
 
 
+The following functions create iterators
+
+* `from(zigType)` - create an iterator for a native zig type
+* `repeat(value)` - create an interator that repeats a given value indefinitely
+* `once(value)` - create an iterator that only repeats once
+
+The following methods are available when calling `then()` on iterator types
+
+* `map(returnType, func)` - transforms an iterator by applying `func`
+* `filter(func)` - filters an iterator by testing a `func` predicate
+* `take(n)` - take only the first `n` elems of an iterator
+* `skip(n)` - skip the first `n` elems of an iterator
+
 ## examples
 
 For more examples see the `examples` directory
