@@ -66,21 +66,30 @@ pub fn main() !void {
         }
     }
 
+    // zip
+    {
+        var it = iter.from([_]i32{ 1, 2, 3 }).then().zip(iter.from([_]i32{ 4, 5 }));
+        while (it.next()) |next| {
+            std.debug.print("zip {any}\n", .{next});
+        }
+    }
+
     // combo
     {
-        var it = iter.from([_]i32{ 1, 2, 3 }).then().map(i32, struct {
+        const timesTwo = struct {
             fn func(n: i32) i32 {
                 return n * 2;
             }
-        }.func)
-            .then()
-            .filter(struct {
+        }.func;
+        const even = struct {
             fn func(n: i32) bool {
                 return @mod(n, 2) == 0;
             }
-        }.func)
-            .then()
-            .take(1);
+        }.func;
+        var it = iter.from([_]i32{ 1, 2, 3 })
+            .then().map(i32, timesTwo)
+            .then().filter(even)
+            .then().take(1);
         while (it.next()) |next| {
             std.debug.print("combo {d}\n", .{next});
         }

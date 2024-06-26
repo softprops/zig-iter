@@ -147,6 +147,40 @@ test Take {
     try std.testing.expectEqual(null, iter.next());
 }
 
+fn Zip(comptime T: type, comptime W: type) type {
+    return struct {
+        wrapped: T,
+        other: W,
+        const Elem = struct { T.Elem, W.Elem };
+
+        pub fn init(wrapped: T, other: W) @This() {
+            return .{ .wrapped = wrapped, .other = other };
+        }
+
+        pub fn next(self: *@This()) ?Elem {
+            if (self.wrapped.next()) |elem1| {
+                if (self.other.next()) |elem2| {
+                    return .{ elem1, elem2 };
+                }
+            }
+            return null;
+        }
+
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
+    };
+}
+
+test Zip {
+    var iter = from([_]i32{ 1, 2, 3 }).then().zip(repeat(@as(i32, 4)));
+    try std.testing.expectEqual(.{ 1, 4 }, iter.next());
+    try std.testing.expectEqual(.{ 2, 4 }, iter.next());
+    try std.testing.expectEqual(.{ 3, 4 }, iter.next());
+    try std.testing.expectEqual(null, iter.next());
+}
+
 fn From(comptime T: type) type {
     // todo support and adapt to anything that's conceptually traversable. arrays, slices, ect
     const info = @typeInfo(T);
@@ -192,6 +226,7 @@ fn From(comptime T: type) type {
             };
             return .{ .wrapped = wrapped, .n = 0, .len = L };
         }
+
         pub fn next(self: *@This()) ?Elem {
             if (self.n < self.len) {
                 const elem = self.wrapped[self.n];
@@ -207,7 +242,7 @@ fn From(comptime T: type) type {
     };
 }
 
-/// derives an interator from a given type where supported
+/// derives an iterator from a given type where supported
 pub fn from(src: anytype) From(@TypeOf(src)) {
     return From(@TypeOf(src)).init(src);
 }
@@ -324,6 +359,11 @@ fn Iter(comptime T: type) type {
         /// filter out any elements which don't match a predicate func
         pub fn filter(self: @This(), func: fn (T.Elem) bool) Filter(T) {
             return Filter(T).init(self.value, func);
+        }
+
+        /// zip two iterators together
+        pub fn zip(self: @This(), other: anytype) Zip(T, @TypeOf(other)) {
+            return Zip(T, @TypeOf(other)).init(self.value, other);
         }
     };
 }
