@@ -3,7 +3,7 @@
 /// we can derive a number of useful functions for transforming a collection of sorts into
 /// a new collection modified for the purposes of a client application
 ///
-/// Specifically a this library operates on a set of signatures that looks like the following
+/// Specifically this library operates on a set of signatures that looks like the following
 ///
 /// ```zig
 /// // the type returned by next
@@ -189,6 +189,7 @@ test Zip {
 /// creates an iterator from a native zig type
 fn From(comptime T: type) type {
     // todo support and adapt to anything that's conceptually traversable. arrays, slices, ect
+    // resolve Elem type
     const info = @typeInfo(T);
     const E = switch (info) {
         .Pointer => |v| blk: {
@@ -257,7 +258,7 @@ fn From(comptime T: type) type {
 }
 
 /// derives an iterator from a given type where supported
-/// current supported types are arrays
+/// current supported types are arrays and slices
 pub fn from(src: anytype) From(@TypeOf(src)) {
     return From(@TypeOf(src)).init(src);
 }
