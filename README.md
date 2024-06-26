@@ -26,7 +26,7 @@ defer buf.deinit();
 for (elems) |elem| {
     buf.appendAssumeCapacity(elem * 2);
 }
-// 👇 capture a refer to the slice of data you want, DONT FORGET TO DEALLOCATE IT
+// 👇 capture a ref to the slice of data you want, DONT FORGET TO DEALLOCATE IT
 const doubled = try buf.toOwnedSlice();
 defer allocator.free(doubled);
 // 👇 do something with it
@@ -98,7 +98,7 @@ defer buf.deinit();
 while (doubled.next()) |elem| {
     buf.appendAssumeCapacity(elem * 2);
 }
-// 👇 capture a refer to the slice of data you want, DONT FORGET TO DEALLOCATE IT
+// 👇 capture a ref to the slice of data you want, DONT FORGET TO DEALLOCATE IT
 const copied = try buf.toOwnedSlice();
 defer allocator.free(copied);
 ```
