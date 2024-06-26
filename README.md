@@ -20,13 +20,13 @@ const elems = [_]i32{ 1, 2, 3 };
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 defer _ = gpa.deinit();
 const allocator = gpa.allocator();
-// 👇 allocate a new list to hold the data of the transformation
+// 👇 allocate a new list to hold the data of the transformation, DONT FORGET TO DEALLOCATE IT
 var buf = try std.ArrayList(i32).initCapacity(allocator, elems.len);
 defer buf.deinit();
 for (elems) |elem| {
     buf.appendAssumeCapacity(elem * 2);
 }
-// 👇 capture a refer to the slice of data you want
+// 👇 capture a refer to the slice of data you want, DONT FORGET TO DEALLOCATE IT
 const doubled = try buf.toOwnedSlice();
 defer allocator.free(doubled);
 // 👇 do something with it
