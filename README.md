@@ -61,8 +61,8 @@ I say _almost_ because
 
 The following functions create iterators
 
-* `from(zigType)` - create an iterator for a native zig type
-* `repeat(value)` - create an interator that repeats a given value indefinitely
+* `from(zigType)` - create an iterator for a native zig type, we're expanding the list of types supported
+* `repeat(value)` - create an iterator that repeats a given value indefinitely
 * `once(value)` - create an iterator that only repeats once
 
 The following methods are available when calling `then()` on iterator types
@@ -71,6 +71,8 @@ The following methods are available when calling `then()` on iterator types
 * `filter(func)` - filters an iterator by testing a `func` predicate
 * `take(n)` - take only the first `n` elems of an iterator
 * `skip(n)` - skip the first `n` elems of an iterator
+
+likely more to come
 
 ## examples
 
