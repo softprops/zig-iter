@@ -3,11 +3,12 @@
 /// we can derive a number of useful functions for transforming a collection of sorts into
 /// a new collection modified for the purposes of a client application
 ///
-/// Specfically a this library operates on a set of signatures that looks like the following
+/// Specifically a this library operates on a set of signatures that looks like the following
 ///
 /// ```zig
 /// const Elem = ...;
 /// pub fn next(self: *@This()) ?Elem {...}
+/// pub fn then(self: @This()) Iter(@This()) { .. }
 /// ```
 const std = @import("std");
 const testing = std.testing;
@@ -16,15 +17,19 @@ fn Repeat(comptime T: type) type {
     return struct {
         value: T,
 
-        usingnamespace Methods(@This());
-
-        const Elem = T;
+        pub const Elem = T;
 
         pub fn init(value: T) @This() {
             return .{ .value = value };
         }
+
         pub fn next(self: *@This()) ?Elem {
             return self.value;
+        }
+
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
         }
     };
 }
@@ -56,6 +61,9 @@ fn Once(comptime T: type) type {
             self.done = true;
             return self.value;
         }
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
     };
 }
 
@@ -76,7 +84,7 @@ pub fn Skip(comptime T: type) type {
     return struct {
         wrapped: T,
         n: usize,
-        usingnamespace Methods(@This());
+
         const Elem = T.Elem;
 
         pub fn init(wrapped: T, n: usize) @This() {
@@ -85,15 +93,22 @@ pub fn Skip(comptime T: type) type {
 
         pub fn next(self: *@This()) ?Elem {
             while (self.n > 0) : (self.n -= 1) {
-                _ = self.wrapped.next();
+                if (self.wrapped.next() == null) {
+                    return null;
+                }
             }
             return self.wrapped.next();
+        }
+
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
         }
     };
 }
 
 test Skip {
-    var iter = from([_]i32{ 1, 2, 3, 4, 5 }).skip(2);
+    var iter = from([_]i32{ 1, 2, 3, 4, 5 }).then().skip(2);
     try std.testing.expectEqual(3, iter.next());
     try std.testing.expectEqual(4, iter.next());
     try std.testing.expectEqual(5, iter.next());
@@ -104,7 +119,7 @@ pub fn Take(comptime T: type) type {
     return struct {
         wrapped: T,
         n: usize,
-        usingnamespace Methods(@This());
+
         const Elem = T.Elem;
 
         pub fn init(wrapped: T, n: usize) @This() {
@@ -118,11 +133,15 @@ pub fn Take(comptime T: type) type {
             }
             return null;
         }
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
     };
 }
 
 test Take {
-    var iter = from([_]i32{ 1, 2, 3, 4, 5 }).take(2);
+    var iter = from([_]i32{ 1, 2, 3, 4, 5 }).then().take(2);
     try std.testing.expectEqual(1, iter.next());
     try std.testing.expectEqual(2, iter.next());
     try std.testing.expectEqual(null, iter.next());
@@ -153,7 +172,6 @@ fn From(comptime T: type) type {
         n: usize,
         len: usize,
 
-        usingnamespace Methods(@This());
         const Elem = E;
 
         pub fn init(wrapped: T) @This() {
@@ -182,6 +200,10 @@ fn From(comptime T: type) type {
             }
             return null;
         }
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
     };
 }
 
@@ -201,13 +223,12 @@ test from {
 }
 
 pub fn Filter(comptime T: type) type {
-    // todo check f is a single arg fn that returns a bool
     return struct {
         wrapped: T,
-        pred: fn (T.Elem) bool,
-        usingnamespace Methods(@This());
+        pred: *const fn (T.Elem) bool,
+
         const Elem = T.Elem;
-        pub fn init(wrapped: T, pred: fn (T.Elem) bool) @This() {
+        pub fn init(wrapped: T, pred: *const fn (T.Elem) bool) @This() {
             return .{ .wrapped = wrapped, .pred = pred };
         }
 
@@ -222,33 +243,33 @@ pub fn Filter(comptime T: type) type {
                 return null;
             }
         }
+
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
     };
 }
 
 test Filter {
-    comptime {
-        var iter = from([_]i32{ 1, 2, 3 }).filter(struct {
-            fn func(n: i32) bool {
-                return n > 1;
-            }
-        }.func);
-        try std.testing.expectEqual(2, iter.next());
-        try std.testing.expectEqual(3, iter.next());
-        try std.testing.expectEqual(null, iter.next());
-    }
+    var iter = from([_]i32{ 1, 2, 3 }).then().filter(struct {
+        fn func(n: i32) bool {
+            return n > 1;
+        }
+    }.func);
+    try std.testing.expectEqual(2, iter.next());
+    try std.testing.expectEqual(3, iter.next());
+    try std.testing.expectEqual(null, iter.next());
 }
 
 pub fn Map(comptime T: type, comptime F: type) type {
     return struct {
         wrapped: T,
-        func: F,
-        usingnamespace Methods(@This());
-        const Elem = switch (@typeInfo(F)) {
-            .Fn => |v| if (v.return_type) |t| t else void,
-            else => @compileError("expected a fn type but given a " ++ @typeName(F)),
-        };
+        func: *const fn (T.Elem) F,
 
-        pub fn init(wrapped: T, func: F) @This() {
+        const Elem = F;
+
+        pub fn init(wrapped: T, func: *const fn (T.Elem) F) @This() {
             return .{ .wrapped = wrapped, .func = func };
         }
 
@@ -259,45 +280,50 @@ pub fn Map(comptime T: type, comptime F: type) type {
                 return null;
             }
         }
+
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
     };
 }
 
 test Map {
-    comptime {
-        var iter = from([_]i32{ 1, 2, 3 }).map(struct {
-            fn func(n: i32) i32 {
-                return n * 2;
-            }
-        }.func);
+    var iter = from([_]i32{ 1, 2, 3 }).then().map(i32, struct {
+        fn func(n: i32) i32 {
+            return n * 2;
+        }
+    }.func);
 
-        try std.testing.expectEqual(2, iter.next());
-        try std.testing.expectEqual(4, iter.next());
-        try std.testing.expectEqual(6, iter.next());
-        try std.testing.expectEqual(null, iter.next());
-    }
+    try std.testing.expectEqual(2, iter.next());
+    try std.testing.expectEqual(4, iter.next());
+    try std.testing.expectEqual(6, iter.next());
+    try std.testing.expectEqual(null, iter.next());
 }
 
-fn Methods(comptime T: type) type {
+fn Iter(comptime T: type) type {
     // check assumptions
     return struct {
+        value: T,
+
         /// skip the first n elements of the iterator
-        pub fn skip(self: T, n: usize) Skip(T) {
-            return Skip(T).init(self, n);
+        pub fn skip(self: @This(), n: usize) Skip(T) {
+            return Skip(T).init(self.value, n);
         }
 
         /// take only the first n elements of the iterator
-        pub fn take(self: T, n: usize) Take(T) {
-            return Take(T).init(self, n);
+        pub fn take(self: @This(), n: usize) Take(T) {
+            return Take(T).init(self.value, n);
         }
 
         /// transform all elements of T into a new item
-        pub fn map(self: T, func: anytype) Map(T, @TypeOf(func)) {
-            return Map(T, @TypeOf(func)).init(self, func);
+        pub fn map(self: @This(), comptime F: type, func: *const fn (T.Elem) F) Map(T, F) {
+            return Map(T, F).init(self.value, func);
         }
 
         /// filter out any elements which don't match a predicate func
-        pub fn filter(self: T, func: fn (T.Elem) bool) Filter(T) {
-            return Filter(T).init(self, func);
+        pub fn filter(self: @This(), func: fn (T.Elem) bool) Filter(T) {
+            return Filter(T).init(self.value, func);
         }
     };
 }
