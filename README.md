@@ -37,7 +37,8 @@ sans required additial allocations and zig's required memory deallocation.
 
 ```zig
 var elems = [_]i32 { 1, 2, 3 };
-var doubled = iter.from(elems).next().map(struct { fn func(n: i32) i32 { n * 2 } }.func);
+var doubled = iter.from(elems)
+    .next().map(struct { fn func(n: i32) i32 { return n * 2; } }.func);
 while (doubled.next()) |elem| {
     std.debug.print("{d}", .{elem});
 }
