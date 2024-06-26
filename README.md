@@ -84,7 +84,7 @@ Note, nothing is allocated behind the scenes. If you do need to take the results
 store the result in an allocatoed type simply do what you would do with any iterator: feed 
 it values of `next()`
 
-```
+```zig
 var elems = [_]i32 { 1, 2, 3 };
 var doubled = iter.from(elems)
     .then().map(i32, struct { fn func(n: i32) i32 { return n * 2; } }.func);
