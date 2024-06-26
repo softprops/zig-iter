@@ -1,13 +1,16 @@
-/// Given a type which conforms to defining a fn next() which returns the next element
-/// in an iteration or null and a const type Elem which repersents the type returned by next
+/// Given a type which conforms to defining a `fn next()` which returns the next element
+/// in an iteration or null and a const type `Elem` which represents the type returned by `next`
 /// we can derive a number of useful functions for transforming a collection of sorts into
 /// a new collection modified for the purposes of a client application
 ///
 /// Specifically a this library operates on a set of signatures that looks like the following
 ///
 /// ```zig
+/// // the type returned by next
 /// const Elem = ...;
-/// pub fn next(self: *@This()) ?Elem {...}
+/// // the next elem in this iterator
+/// pub fn next(self: *@This()) ?Elem { ... }
+/// // chains this with additional an iterator transformation
 /// pub fn then(self: @This()) Iter(@This()) { .. }
 /// ```
 const std = @import("std");
@@ -61,6 +64,8 @@ fn Once(comptime T: type) type {
             self.done = true;
             return self.value;
         }
+
+        //usingnamespace Iter(@This());
         pub fn then(self: @This()) Iter(@This()) {
             return Iter(@This()){ .value = self };
         }
@@ -181,23 +186,26 @@ test Zip {
     try std.testing.expectEqual(null, iter.next());
 }
 
+/// creates an iterator from a native zig type
 fn From(comptime T: type) type {
     // todo support and adapt to anything that's conceptually traversable. arrays, slices, ect
     const info = @typeInfo(T);
-    // element type
     const E = switch (info) {
         .Pointer => |v| blk: {
             switch (v.size) {
                 .Slice => break :blk v.child,
-                .One => break :blk v.child,
-                else => |otherwise| {
-                    std.debug.print("failed to resolve len for {any}", .{otherwise});
-                    unreachable;
+                .One => {
+                    switch (@typeInfo(v.child)) {
+                        .Pointer => |cv| break :blk cv.child,
+                        .Array => |cv| break :blk cv.child,
+                        else => @compileError("failed to resolve child of child type for type " ++ @typeName(v.child)),
+                    }
                 },
+                else => @compileError("failed to resolve child type for type " ++ @typeName(T)),
             }
         },
         .Array => |v| v.child,
-        else => @compileError("unsupported type " ++ @typeName(T)),
+        else => @compileError("unsupported iterator type " ++ @typeName(T)),
     };
 
     return struct {
@@ -214,7 +222,13 @@ fn From(comptime T: type) type {
                 .Pointer => |v| blk: {
                     switch (v.size) {
                         .Slice => break :blk @intCast(wrapped.len),
-                        .One => break :blk 1,
+                        .One => break :blk {
+                            switch (@typeInfo(v.child)) {
+                                .Pointer => |cv| break :blk @intCast(cv.len),
+                                .Array => |cv| break :blk @intCast(cv.len),
+                                else => @compileError("failed to resolve len for type " ++ @typeName(v.child)),
+                            }
+                        },
                         else => |otherwise| {
                             std.debug.print("failed to resolve len for {any}", .{otherwise});
                             unreachable;
@@ -243,15 +257,33 @@ fn From(comptime T: type) type {
 }
 
 /// derives an iterator from a given type where supported
+/// current supported types are arrays
 pub fn from(src: anytype) From(@TypeOf(src)) {
     return From(@TypeOf(src)).init(src);
 }
 
-// todo: cover more expectable types
 test from {
     var iter = from([_]u8{ 1, 2, 3 });
 
     try std.testing.expectEqual(1, iter.next());
+    try std.testing.expectEqual(2, iter.next());
+    try std.testing.expectEqual(3, iter.next());
+    try std.testing.expectEqual(null, iter.next());
+}
+
+test "from str" {
+    var iter = from("abc");
+
+    try std.testing.expectEqual(97, iter.next());
+    try std.testing.expectEqual(98, iter.next());
+    try std.testing.expectEqual(99, iter.next());
+    try std.testing.expectEqual(null, iter.next());
+}
+
+test "from slice" {
+    var data = [_]i32{ 1, 2, 3 };
+    var iter = from(data[1..]);
+
     try std.testing.expectEqual(2, iter.next());
     try std.testing.expectEqual(3, iter.next());
     try std.testing.expectEqual(null, iter.next());
