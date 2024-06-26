@@ -84,6 +84,19 @@ pub fn main() !void {
         std.debug.print("fold {any}\n", .{sum});
     }
 
+    // fromFn
+    {
+        var it = iter.fromFn(i32, 0, struct {
+            fn func(state: i32) ?i32 {
+                const next = state + 1;
+                return if (state > 5) null else next;
+            }
+        }.func);
+        while (it.next()) |next| {
+            std.debug.print("fromFn {any}\n", .{next});
+        }
+    }
+
     // combo
     {
         const timesTwo = struct {

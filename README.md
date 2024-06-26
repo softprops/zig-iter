@@ -66,6 +66,7 @@ The following functions create iterators
 * `from(zigType)` - create an iterator for a native zig type, we're expanding the list of types supported
 * `repeat(value)` - create an iterator that repeats a given value indefinitely
 * `once(value)` - create an iterator that only repeats once
+* `fromFn(returnType, init, func)` - create an iterator from a generator func
 
 The following methods are available when calling `then()` on iterator types
 

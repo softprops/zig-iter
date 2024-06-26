@@ -369,6 +369,58 @@ test Map {
     try std.testing.expectEqual(null, iter.next());
 }
 
+fn Function(comptime T: type) type {
+    return struct {
+        state: ?T,
+        func: *const fn (T) ?T,
+
+        const Elem = T;
+
+        fn init(initial: T, func: *const fn (T) ?T) @This() {
+            return .{ .state = initial, .func = func };
+        }
+
+        pub fn next(self: *@This()) ?Elem {
+            if (self.state) |state| {
+                self.state = self.func(state);
+                return self.state;
+            }
+            return null;
+        }
+
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
+    };
+}
+
+/// returns an interator that generates its next state based on the result of applying
+/// a state to a func with a provided initial state
+///
+/// note: the reason why the intial state is needed is to provide access to information needed
+/// to compute the next state. zig doesn't currently support closures so it would not otherwise
+/// be possible to access outter scope information from within func
+/// if your func does not actually need state, simply use a dummy value.
+pub fn fromFn(comptime T: type, initial: T, func: *const fn (T) ?T) Function(T) {
+    return Function(T).init(initial, func);
+}
+
+test fromFn {
+    var it = fromFn(i32, 0, struct {
+        fn func(state: i32) ?i32 {
+            return switch (state) {
+                3 => null, // stop after 3
+                else => state + 1, // increment state by one
+            };
+        }
+    }.func);
+    try std.testing.expectEqual(1, it.next());
+    try std.testing.expectEqual(2, it.next());
+    try std.testing.expectEqual(3, it.next());
+    try std.testing.expectEqual(null, it.next());
+}
+
 fn Fold(comptime T: type, comptime R: type) type {
     return struct {
         wrapped: T,
