@@ -22,7 +22,7 @@ fn Repeat(comptime T: type) type {
 
         pub const Elem = T;
 
-        pub fn init(value: T) @This() {
+        fn init(value: T) @This() {
             return .{ .value = value };
         }
 
@@ -54,7 +54,7 @@ fn Once(comptime T: type) type {
         value: T,
         done: bool = false,
         const Elem = T;
-        pub fn init(value: T) @This() {
+        fn init(value: T) @This() {
             return .{ .value = value };
         }
         pub fn next(self: *@This()) ?Elem {
@@ -85,14 +85,14 @@ test once {
     }
 }
 
-pub fn Skip(comptime T: type) type {
+fn Skip(comptime T: type) type {
     return struct {
         wrapped: T,
         n: usize,
 
         const Elem = T.Elem;
 
-        pub fn init(wrapped: T, n: usize) @This() {
+        fn init(wrapped: T, n: usize) @This() {
             return .{ .wrapped = wrapped, .n = n };
         }
 
@@ -120,14 +120,14 @@ test Skip {
     try std.testing.expectEqual(null, iter.next());
 }
 
-pub fn Take(comptime T: type) type {
+fn Take(comptime T: type) type {
     return struct {
         wrapped: T,
         n: usize,
 
         const Elem = T.Elem;
 
-        pub fn init(wrapped: T, n: usize) @This() {
+        fn init(wrapped: T, n: usize) @This() {
             return .{ .wrapped = wrapped, .n = n };
         }
         pub fn next(self: *@This()) ?Elem {
@@ -158,7 +158,7 @@ fn Zip(comptime T: type, comptime W: type) type {
         other: W,
         const Elem = struct { T.Elem, W.Elem };
 
-        pub fn init(wrapped: T, other: W) @This() {
+        fn init(wrapped: T, other: W) @This() {
             return .{ .wrapped = wrapped, .other = other };
         }
 
@@ -217,7 +217,7 @@ fn From(comptime T: type) type {
 
         const Elem = E;
 
-        pub fn init(wrapped: T) @This() {
+        fn init(wrapped: T) @This() {
             // resolve len
             const L: usize = switch (info) {
                 .Pointer => |v| blk: {
@@ -290,13 +290,13 @@ test "from slice" {
     try std.testing.expectEqual(null, iter.next());
 }
 
-pub fn Filter(comptime T: type) type {
+fn Filter(comptime T: type) type {
     return struct {
         wrapped: T,
         pred: *const fn (T.Elem) bool,
 
         const Elem = T.Elem;
-        pub fn init(wrapped: T, pred: *const fn (T.Elem) bool) @This() {
+        fn init(wrapped: T, pred: *const fn (T.Elem) bool) @This() {
             return .{ .wrapped = wrapped, .pred = pred };
         }
 
@@ -330,14 +330,14 @@ test Filter {
     try std.testing.expectEqual(null, iter.next());
 }
 
-pub fn Map(comptime T: type, comptime F: type) type {
+fn Map(comptime T: type, comptime F: type) type {
     return struct {
         wrapped: T,
         func: *const fn (T.Elem) F,
 
         const Elem = F;
 
-        pub fn init(wrapped: T, func: *const fn (T.Elem) F) @This() {
+        fn init(wrapped: T, func: *const fn (T.Elem) F) @This() {
             return .{ .wrapped = wrapped, .func = func };
         }
 
@@ -377,11 +377,11 @@ fn Fold(comptime T: type, comptime R: type) type {
 
         const Elem = R;
 
-        pub fn init(wrapped: T, initial: R, func: *const fn (T.Elem, R) R) @This() {
+        fn init(wrapped: T, initial: R, func: *const fn (T.Elem, R) R) @This() {
             return .{ .wrapped = wrapped, .state = initial, .func = func };
         }
 
-        pub fn get(self: *@This()) R {
+        fn get(self: *@This()) R {
             while (self.wrapped.next()) |elem| {
                 self.state = self.func(elem, self.state);
             }
