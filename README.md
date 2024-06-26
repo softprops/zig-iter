@@ -3,7 +3,7 @@
 </h1>
 
 <div align="center">
-    zig iterators
+    iterators (for zig)
 </div>
 
 ---
