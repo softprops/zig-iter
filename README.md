@@ -56,7 +56,7 @@ while (doubled.next()) |elem| {
 I say _almost_ because 
 
 * zig does not support closures, but it does support functions as arguments so we can emulate these to a certain degree with struct fn references
-* some [changes to `usingnamespace`](https://github.com/softprops/zig-iter/issues/1) facilitate the need for an itermediatory method, we use `next()` to access and chain iterator methods. If zig brings that back in a different form. `next()` will no longer been nessessary.
+* some [changes to `usingnamespace`](https://github.com/softprops/zig-iter/issues/1) facilitate the need for an itermediatory method, we use `then()` to access and chain iterator methods. If zig brings that back in a different form. `then()` will no longer been nessessary.
 
 
 The following functions create iterators
@@ -75,6 +75,33 @@ The following methods are available when calling `then()` on iterator types
 * `fold(returnType, init, func)` - reduces an iterator down to a single value
 
 likely more to come
+
+
+Note, nothing is allocated behind the scenes. If you do need to take the results and 
+store the result in an allocatoed type simply do what you would do with any iterator: feed 
+it values of `next()`
+
+```
+var elems = [_]i32 { 1, 2, 3 };
+var doubled = iter.from(elems)
+    .then().map(i32, struct { fn func(n: i32) i32 { return n * 2; } }.func);
+
+// now go ahead feed the result into a list
+
+// 👇 conjure an allocator for the list below
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+defer _ = gpa.deinit();
+const allocator = gpa.allocator();
+// 👇 allocate a new list to hold the data of the transformation, DONT FORGET TO DEALLOCATE IT
+var buf = try std.ArrayList(i32).initCapacity(allocator, elems.len);
+defer buf.deinit();
+while (doubled.next()) |elem| {
+    buf.appendAssumeCapacity(elem * 2);
+}
+// 👇 capture a refer to the slice of data you want, DONT FORGET TO DEALLOCATE IT
+const copied = try buf.toOwnedSlice();
+defer allocator.free(copied);
+```
 
 ## examples
 
