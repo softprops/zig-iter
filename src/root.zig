@@ -186,6 +186,38 @@ test Zip {
     try std.testing.expectEqual(null, iter.next());
 }
 
+fn Chain(comptime T: type, comptime W: type) type {
+    return struct {
+        wrapped: T,
+        other: W,
+        const Elem = T.Elem;
+
+        fn init(wrapped: T, other: W) @This() {
+            return .{ .wrapped = wrapped, .other = other };
+        }
+
+        pub fn next(self: *@This()) ?Elem {
+            return if (self.wrapped.next()) |elem| elem else self.other.next();
+        }
+
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
+    };
+}
+
+test Chain {
+    var iter = from([_]i32{ 1, 2, 3 }).then().chain(from([_]i32{ 4, 5, 6 }));
+    try std.testing.expectEqual(1, iter.next());
+    try std.testing.expectEqual(2, iter.next());
+    try std.testing.expectEqual(3, iter.next());
+    try std.testing.expectEqual(4, iter.next());
+    try std.testing.expectEqual(5, iter.next());
+    try std.testing.expectEqual(6, iter.next());
+    try std.testing.expectEqual(null, iter.next());
+}
+
 /// creates an iterator from a native zig type
 fn From(comptime T: type) type {
     // todo support and adapt to anything that's conceptually traversable. arrays, slices, ect
@@ -483,6 +515,11 @@ fn Iter(comptime T: type) type {
             return Zip(T, @TypeOf(other)).init(self.value, other);
         }
 
+        pub fn chain(self: @This(), other: anytype) Chain(T, @TypeOf(other)) {
+            return Chain(T, @TypeOf(other)).init(self.value, other);
+        }
+
+        /// consumes an iterator reducing it down to a single computed value
         pub fn fold(self: @This(), comptime R: type, init: R, func: *const fn (T.Elem, R) R) R {
             var folder = Fold(T, R).init(self.value, init, func);
             return folder.get();
