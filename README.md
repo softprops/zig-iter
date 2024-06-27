@@ -64,18 +64,20 @@ I say _almost_ because
 The following functions create iterators
 
 * `from(zigType)` - create an iterator for a native zig type, we're expanding the list of types supported
-* `repeat(value)` - create an iterator that repeats a given value indefinitely
-* `once(value)` - create an iterator that only repeats once
 * `fromFn(returnType, init, func)` - create an iterator from a generator func
+* `once(value)` - create an iterator that only repeats once
+* `repeat(value)` - create an iterator that repeats a given value indefinitely
 
 The following methods are available when calling `then()` on iterator types
 
-* `map(returnType, func)` - transforms an iterator by applying `func`
+* `chain(other)` - extends one iterator with another
+* `cycle()` - repeats an iterator indefinitely
 * `filter(func)` - filters an iterator by testing a `func` predicate
-* `take(n)` - take only the first `n` elems of an iterator
-* `skip(n)` - skip the first `n` elems of an iterator
-* `zip(iter)` - create an iterator yielding a tuple of iterator values
 * `fold(returnType, init, func)` - reduces an iterator down to a single value
+* `map(returnType, func)` - transforms an iterator by applying `func`
+* `skip(n)` - skip the first `n` elems of an iterator
+* `take(n)` - take only the first `n` elems of an iterator
+* `zip(iter)` - create an iterator yielding a tuple of iterator values
 
 likely more to come
 

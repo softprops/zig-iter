@@ -82,6 +82,14 @@ pub fn main() !void {
         }
     }
 
+    // cycle
+    {
+        var it = iter.from([_]i32{ 1, 2, 3 }).then().cycle().then().take(10);
+        while (it.next()) |next| {
+            std.debug.print("cycle {any}\n", .{next});
+        }
+    }
+
     // fold
     {
         const sum = iter.from([_]i32{ 1, 2, 3 }).then().fold(i32, 0, struct {

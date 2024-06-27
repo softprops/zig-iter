@@ -218,6 +218,40 @@ test Chain {
     try std.testing.expectEqual(null, iter.next());
 }
 
+fn Cycle(comptime T: type) type {
+    return struct {
+        wrapped: T,
+        current: T,
+        const Elem = T.Elem;
+
+        fn init(wrapped: T) @This() {
+            return .{ .wrapped = wrapped, .current = wrapped };
+        }
+
+        pub fn next(self: *@This()) ?Elem {
+            return if (self.current.next()) |elem| elem else blk: {
+                self.current = self.wrapped;
+                break :blk self.current.next();
+            };
+        }
+
+        //usingnamespace Iter(@This());
+        pub fn then(self: @This()) Iter(@This()) {
+            return Iter(@This()){ .value = self };
+        }
+    };
+}
+
+test Cycle {
+    var iter = from([_]i32{ 1, 2 }).then().cycle();
+    try std.testing.expectEqual(1, iter.next());
+    try std.testing.expectEqual(2, iter.next());
+    try std.testing.expectEqual(1, iter.next());
+    try std.testing.expectEqual(2, iter.next());
+    try std.testing.expectEqual(1, iter.next());
+    try std.testing.expectEqual(2, iter.next());
+}
+
 /// creates an iterator from a native zig type
 fn From(comptime T: type) type {
     // todo support and adapt to anything that's conceptually traversable. arrays, slices, ect
@@ -515,8 +549,14 @@ fn Iter(comptime T: type) type {
             return Zip(T, @TypeOf(other)).init(self.value, other);
         }
 
+        /// extends one iterator with another. this must have the same Elem type
         pub fn chain(self: @This(), other: anytype) Chain(T, @TypeOf(other)) {
             return Chain(T, @TypeOf(other)).init(self.value, other);
+        }
+
+        /// repeats an iterator indefinitely
+        pub fn cycle(self: @This()) Cycle(T) {
+            return Cycle(T).init(self.value);
         }
 
         /// consumes an iterator reducing it down to a single computed value
