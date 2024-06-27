@@ -12,9 +12,9 @@
 
 ## what's next()?
 
-If you are coming to zig from any variety of other languages you might be asking the questions like: how can I transform this collection?, how can I filter out elements?, among other things you might be used to from where you are coming from. The answer in zig is "it depends", but you'll likely be using a for loop and allocating a copy of the collection you have on hand.
+If you are coming to zig from any variety of other languages (we welcome you) you might be asking the questions like: how can I transform this zig collection?, how can I filter out elements?, and other perfectly valid questions based on what you might be used to from where you are coming from. The answer in zig is "it depends", but you'll likely be using a for loop and allocating a copy of the collection you have on hand.
 
-Let's use a very simple example, doubling the value of an array of elems that you may do something later with. I'll just print it out for simplicity but you'll likely be doing something more useful.
+Let's use a very simple example: doubling the value of an array of elems that you may do something later with. I'll just print it out for simplicity, but you'll likely be doing something more useful.
 
 ```zig
 const elems = [_]i32{ 1, 2, 3 };
@@ -39,10 +39,10 @@ for (doubled) |elem| {
 
 The simple example above quickly becomes much more complicated as additional transformations and filtering is required.
 
-If you are coming from another language you are used to something like `elems.map(...)`
+If you are coming to zig from another language you are probably used to expressing this with something like `elems.map(...)`
 
-With this library you can, _almost_ have that too. Below is an equivalent program but 
-sans required additial allocations and zig's required memory deallocation. 
+With this library you can _almost_ have that too. Below is an equivalent program but 
+sans required additional allocations and zig's required memory deallocation. 
 
 ```zig
 var elems = [_]i32 { 1, 2, 3 };
@@ -58,7 +58,7 @@ while (doubled.next()) |elem| {
 I say _almost_ because 
 
 * zig does not support closures, but it does support functions as arguments so we can emulate these to a certain degree with struct fn references
-* some [changes to `usingnamespace`](https://github.com/softprops/zig-iter/issues/1) facilitate the need for an itermediatory method, we use `then()` to access and chain iterator methods. If zig brings that back in a different form. `then()` will no longer been nessessary.
+* some [changes to `usingnamespace`](https://github.com/softprops/zig-iter/issues/1) facilitate the need for an itermediatory method, we use `then()`, to access and chain iterator methods. If zig brings that back in a different form this library's `then()` will no longer been nessessary.
 
 
 The following functions create iterators
